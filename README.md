@@ -12,3 +12,14 @@ pip install ttkthemes
 pip install pillow
 pip install tkcalendar
 pip install reportlab
+
+
+Aplicación
+
+Para la base de datos usamos DB Browser for SQLite.
+
+
+Credenciales de Acceso 
+
+Usuario: admin
+Contraseña: admin
