@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import datetime
 import threading
-from reportlab.lib.pagesizes import latter
+from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
@@ -259,7 +259,8 @@ class Ventas(tk.Frame):
                 c.execute("UPDATE articulos SET stock = stock - ? WHERE articulo = ?", (cantidad, producto))
 
             conn.commit()
-            conn.close()
+
+            self.generar_factura_pdf(total_venta, cliente)
 
         except sqlite3.Error as e:
             messagebox.showerror("Error", f"Error al registrar la venta: {e}")
@@ -485,6 +486,108 @@ class Ventas(tk.Frame):
         except sqlite3.Error as e:
             messagebox.showerror("Error", f"Error al obtener las ventas: {e}")
 
+    def generar_factura_pdf(self, total_venta, cliente):
+        try:
+        # Definir la ruta del archivo PDF y crear el lienzo (canvas)
+            factura_path = f"factura/Factura_{self.numero_factura}.pdf"
+            c = canvas.Canvas(factura_path, pagesize=letter)
+
+        # Datos de la empresa emisora
+            empresa_market = "S-MART"
+            empresa_direccion = "Calle # 6, Candelaria - Zona Norte"
+            empresa_telefono = "+591 7676-0597"
+            empresa_email = "contacto@s-mart.com"
+            empresa_website = "www.s-martbolivia.com"
+
+        #  Encabezado principal del documento (Título centrado)
+            c.setFont("Helvetica-Bold", 18)  
+            c.drawCentredString(300, 750, "FACTURA DE SERVICIOS")  
+
+        # Datos de la empresa en la parte superior izquierda
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, 710, f"{empresa_market}")
+
+            c.setFont("Helvetica", 12)
+            c.drawString(50, 690, f"Dirección: {empresa_direccion}")
+            c.drawString(50, 670, f"Teléfono: {empresa_telefono}")
+            c.drawString(50, 650, f"Email: {empresa_email}")
+            c.drawString(50, 630, f"Website: {empresa_website}")
+
+        # Línea divisoria decorativa
+            c.setLineWidth(0.5)
+            c.setStrokeColor(colors.gray)
+            c.line(50, 620, 550, 620)
+
+        # Información de la factura (Número y Fecha actual)
+            c.setFont("Helvetica", 12)
+            c.drawString(50, 600, f"Número de factura: {self.numero_factura}")
+            c.drawString(50, 580, f"Fecha: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        # Linea Horizontal separador    
+            c.line(50, 550, 550, 550)
+
+        # Datos del cliente
+            c.drawString(50, 540, f"Cliente: {cliente}")
+            c.drawString(50, 520, "Descripción de producto:")
+
+        # Cabecera de la tabla de productos
+            y_offset = 500
+            c.setFont("Helvetica-Bold", 12)  
+            c.drawString(70, y_offset, "Producto")
+            c.drawString(270, y_offset, "Cantidad")
+            c.drawString(370, y_offset, "Precio")
+            c.drawString(470, y_offset, "Total")
+
+        # Línea debajo de la cabecera de la tabla
+            c.line(50, y_offset - 10, 550, y_offset - 10)
+            y_offset -= 30
+
+        # Iterar y rellenar los productos seleccionados en la tabla
+            c.setFont("Helvetica", 12)
+            for item in self.productos_seleccionados:
+                factura, cliente, producto, precio, cantidad, total, costo = item
+                c.drawString(70, y_offset, producto)
+                c.drawString(270, y_offset, str(cantidad))
+                c.drawString(370, y_offset, "Bs {:,.0f}".format(precio))
+                c.drawString(470, y_offset, str(total))
+                y_offset -= 20
+
+        # Línea de cierre de la tabla
+            c.line(50, y_offset, 550, y_offset)
+            y_offset -= 20
+
+            # 8. Monto total a pagar destacado
+            c.setFont("Helvetica-Bold", 14)
+            c.setFillColor(colors.darkblue)
+            c.drawString(50, y_offset, f"Total a Pagar: Bs {total_venta:,.0f}")
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 12)
+
+        # Mensaje de agradecimiento
+            y_offset -= 30
+            c.setFont("Helvetica-Bold", 12)  # Cambiamos a fuente en negrita y tamaño 12
+            c.drawCentredString(300, y_offset, "¡Gracias por tu compra, vuelve pronto!")
+        
+        # Términos y condiciones al pie de página
+            y_offset -= 60
+            c.setFont("Helvetica", 10)
+            c.drawString(50, y_offset, "Términos y Condiciones:")
+            c.drawString(50, y_offset - 20, "1. Los productos comprados no tienen devolución.")
+            c.drawString(50, y_offset - 40, "2. Conserve esta factura como comprobante de su compra.")
+            c.drawString(50, y_offset - 60, "3. Para más información, visite nuestro sitio web o contacte a servicio al cliente.")
+
+        # Guardar el documento PDF generado
+            c.save()
+
+            # Mostrar mensaje de éxito en pantalla y abrir el archivo automáticamente
+            messagebox.showinfo("Factura generada", f"Se ha generado la factura en: {factura_path}")
+            os.startfile(os.path.abspath(factura_path))
+
+        except Exception as e:
+            # Manejo de excepciones en caso de error imprevisto
+            messagebox.showerror("Error", f"No se pudo generar la factura: {str(e)}")
+   
     def widgets(self):
     # Marco contenedor superior para los campos de entrada y botones de control de ventas
         labelframe = tk.LabelFrame(self, font="sans 12 bold", bg="#C6D9E3")

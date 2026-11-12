@@ -31,7 +31,8 @@ class Manager(Tk):
             self.frames[i] = frame
 
         # Mostramos la pantalla de inicio de sesion por defecto al arrancar
-        self.show_frame(Container)
+        self.show_frame(Login)
+        
         # Configuracion de estilos visuales modernos para los widgets de ttk
         self.style = ttk.Style()
         self.style.theme_use("clam")
